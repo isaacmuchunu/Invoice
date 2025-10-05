@@ -1,41 +1,45 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { useData } from "@/hooks/use-data";
 import { DashboardHeader } from "@/components/dashboard-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { Client } from "@/lib/definitions";
+import { Client, ClientSchema } from "@/lib/definitions";
 import { toast } from "sonner";
 
 export default function EditClientPage() {
   const router = useRouter();
   const params = useParams();
   const { clients, updateClient } = useData();
-  const [client, setClient] = useState<Client | null>(null);
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [address, setAddress] = useState("");
+  const clientId = params.id as string;
+  const client = clients.find(c => c.id === clientId);
+
+  const form = useForm<z.infer<typeof ClientSchema>>({
+    resolver: zodResolver(ClientSchema),
+    defaultValues: {
+      name: "",
+      email: "",
+      address: "",
+    },
+  });
 
   useEffect(() => {
-    const clientId = params.id as string;
-    const currentClient = clients.find(c => c.id === clientId);
-    if (currentClient) {
-      setClient(currentClient);
-      setName(currentClient.name);
-      setEmail(currentClient.email);
-      setAddress(currentClient.address);
-    }
-  }, [params.id, clients]);
-
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
     if (client) {
-      updateClient({ ...client, name, email, address });
+      form.reset(client);
+    }
+  }, [client, form]);
+
+  const onSubmit = (values: z.infer<typeof ClientSchema>) => {
+    if (client) {
+      updateClient({ ...client, ...values });
       toast("Client has been updated.", {
         description: "The client's details have been successfully saved.",
       });
@@ -64,53 +68,63 @@ export default function EditClientPage() {
             <p className="text-muted-foreground">Update the client&apos;s details</p>
           </div>
         </div>
-        <form onSubmit={handleSubmit}>
-          <Card>
-            <CardHeader>
-              <CardTitle>Client Details</CardTitle>
-              <CardDescription>Update the details for {client.name}</CardDescription>
-            </CardHeader>
-            <CardContent className="grid gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Name</Label>
-                <Input
-                  id="name"
-                  placeholder="Enter client name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  required
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)}>
+            <Card>
+              <CardHeader>
+                <CardTitle>Client Details</CardTitle>
+                <CardDescription>Update the details for {client.name}</CardDescription>
+              </CardHeader>
+              <CardContent className="grid gap-4">
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Name</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter client name" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="Enter client email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
+                <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email</FormLabel>
+                      <FormControl>
+                        <Input type="email" placeholder="Enter client email" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="address">Address</Label>
-                <Input
-                  id="address"
-                  placeholder="Enter client address"
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                  required
+                <FormField
+                  control={form.control}
+                  name="address"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Address</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter client address" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
-              </div>
-            </CardContent>
-            <CardFooter className="flex justify-end gap-2">
-              <Link href="/clients">
-                <Button variant="outline">Cancel</Button>
-              </Link>
-              <Button type="submit">Save Changes</Button>
-            </CardFooter>
-          </Card>
-        </form>
+              </CardContent>
+              <CardFooter className="flex justify-end gap-2">
+                <Link href="/clients">
+                  <Button variant="outline">Cancel</Button>
+                </Link>
+                <Button type="submit">Save Changes</Button>
+              </CardFooter>
+            </Card>
+          </form>
+        </Form>
       </main>
     </div>
   );

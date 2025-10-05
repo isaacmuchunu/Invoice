@@ -10,6 +10,7 @@ interface DataContextProps {
   addClient: (client: Omit<Client, 'id'>) => void;
   deleteClient: (id: string) => void;
   updateClient: (client: Client) => void;
+  addInvoice: (invoice: Omit<Invoice, 'id' | 'date'>) => void;
   deleteInvoice: (id: string) => void;
   updateInvoice: (invoice: Invoice) => void;
 }
@@ -37,6 +38,15 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     );
   };
 
+  const addInvoice = (invoice: Omit<Invoice, 'id' | 'date'>) => {
+    const newInvoice = {
+      ...invoice,
+      id: (invoices.length + 1).toString(),
+      date: new Date().toISOString().split('T')[0],
+    };
+    setInvoices(prevInvoices => [...prevInvoices, newInvoice]);
+  };
+
   const deleteInvoice = (id: string) => {
     setInvoices(prevInvoices => prevInvoices.filter(invoice => invoice.id !== id));
   };
@@ -50,7 +60,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <DataContext.Provider value={{ invoices, clients, addClient, deleteClient, updateClient, deleteInvoice, updateInvoice }}>
+    <DataContext.Provider value={{ invoices, clients, addClient, deleteClient, updateClient, addInvoice, deleteInvoice, updateInvoice }}>
       {children}
     </DataContext.Provider>
   );

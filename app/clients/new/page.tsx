@@ -1,26 +1,35 @@
 "use client";
 
-import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { useData } from "@/hooks/use-data";
 import { DashboardHeader } from "@/components/dashboard-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { ClientSchema } from "@/lib/definitions";
 
 export default function NewClientPage() {
   const router = useRouter();
   const { addClient } = useData();
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [address, setAddress] = useState("");
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    addClient({ name, email, address });
+  const form = useForm<z.infer<typeof ClientSchema>>({
+    resolver: zodResolver(ClientSchema),
+    defaultValues: {
+      name: "",
+      email: "",
+      address: "",
+    },
+  });
+
+  const onSubmit = (values: z.infer<typeof ClientSchema>) => {
+    addClient(values);
     toast("Client has been added.", {
       description: "The new client has been successfully saved.",
     });
@@ -37,53 +46,63 @@ export default function NewClientPage() {
             <p className="text-muted-foreground">Add a new client to your list</p>
           </div>
         </div>
-        <form onSubmit={handleSubmit}>
-          <Card>
-            <CardHeader>
-              <CardTitle>Client Details</CardTitle>
-              <CardDescription>Enter the details of the new client</CardDescription>
-            </CardHeader>
-            <CardContent className="grid gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Name</Label>
-                <Input
-                  id="name"
-                  placeholder="Enter client name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  required
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)}>
+            <Card>
+              <CardHeader>
+                <CardTitle>Client Details</CardTitle>
+                <CardDescription>Enter the details of the new client</CardDescription>
+              </CardHeader>
+              <CardContent className="grid gap-4">
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Name</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter client name" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="Enter client email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
+                <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email</FormLabel>
+                      <FormControl>
+                        <Input type="email" placeholder="Enter client email" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="address">Address</Label>
-                <Input
-                  id="address"
-                  placeholder="Enter client address"
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                  required
+                <FormField
+                  control={form.control}
+                  name="address"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Address</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter client address" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
-              </div>
-            </CardContent>
-            <CardFooter className="flex justify-end gap-2">
-              <Link href="/clients">
-                <Button variant="outline">Cancel</Button>
-              </Link>
-              <Button type="submit">Save Client</Button>
-            </CardFooter>
-          </Card>
-        </form>
+              </CardContent>
+              <CardFooter className="flex justify-end gap-2">
+                <Link href="/clients">
+                  <Button variant="outline">Cancel</Button>
+                </Link>
+                <Button type="submit">Save Client</Button>
+              </CardFooter>
+            </Card>
+          </form>
+        </Form>
       </main>
     </div>
   );

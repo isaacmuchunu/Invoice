@@ -1,41 +1,49 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { useData } from "@/hooks/use-data";
 import { DashboardHeader } from "@/components/dashboard-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { Invoice } from "@/lib/definitions";
+import { Invoice, InvoiceSchema } from "@/lib/definitions";
+import { toast } from "sonner";
 
 export default function EditInvoicePage() {
   const router = useRouter();
   const params = useParams();
-  const { invoices, updateInvoice } = useData();
-  const [invoice, setInvoice] = useState<Invoice | null>(null);
-  const [clientName, setClientName] = useState("");
-  const [amount, setAmount] = useState(0);
-  const [status, setStatus] = useState<'Paid' | 'Pending' | 'Overdue'>('Pending');
+  const { invoices, clients, updateInvoice } = useData();
+  const invoiceId = params.id as string;
+  const invoice = invoices.find(inv => inv.id === invoiceId);
+
+  const form = useForm<z.infer<typeof InvoiceSchema>>({
+    resolver: zodResolver(InvoiceSchema),
+    defaultValues: {
+      clientName: "",
+      amount: 0,
+      status: "Pending",
+    },
+  });
 
   useEffect(() => {
-    const invoiceId = params.id as string;
-    const currentInvoice = invoices.find(inv => inv.id === invoiceId);
-    if (currentInvoice) {
-      setInvoice(currentInvoice);
-      setClientName(currentInvoice.clientName);
-      setAmount(currentInvoice.amount);
-      setStatus(currentInvoice.status);
-    }
-  }, [params.id, invoices]);
-
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
     if (invoice) {
-      updateInvoice({ ...invoice, clientName, amount, status });
+      form.reset(invoice);
+    }
+  }, [invoice, form]);
+
+  const onSubmit = (values: z.infer<typeof InvoiceSchema>) => {
+    if (invoice) {
+      updateInvoice({ ...invoice, ...values });
+      toast("Invoice has been updated.", {
+        description: "The invoice details have been successfully saved.",
+      });
       router.push("/");
     }
   };
@@ -48,7 +56,7 @@ export default function EditInvoicePage() {
           <p>Invoice not found</p>
         </main>
       </div>
-    )
+    );
   }
 
   return (
@@ -61,56 +69,83 @@ export default function EditInvoicePage() {
             <p className="text-muted-foreground">Update the invoice details</p>
           </div>
         </div>
-        <form onSubmit={handleSubmit}>
-          <Card>
-            <CardHeader>
-              <CardTitle>Invoice Details</CardTitle>
-              <CardDescription>Update the details for invoice {invoice.id}</CardDescription>
-            </CardHeader>
-            <CardContent className="grid gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="clientName">Client Name</Label>
-                <Input
-                  id="clientName"
-                  placeholder="Enter client name"
-                  value={clientName}
-                  onChange={(e) => setClientName(e.target.value)}
-                  required
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)}>
+            <Card>
+              <CardHeader>
+                <CardTitle>Invoice Details</CardTitle>
+                <CardDescription>Update the details for invoice {invoice.id}</CardDescription>
+              </CardHeader>
+              <CardContent className="grid gap-4">
+                <FormField
+                  control={form.control}
+                  name="clientName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Client</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a client" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {clients.map(client => (
+                            <SelectItem key={client.id} value={client.name}>
+                              {client.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="amount">Amount</Label>
-                <Input
-                  id="amount"
-                  type="number"
-                  placeholder="Enter amount"
-                  value={amount}
-                  onChange={(e) => setAmount(parseFloat(e.target.value))}
-                  required
+                <FormField
+                  control={form.control}
+                  name="amount"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Amount</FormLabel>
+                      <FormControl>
+                        <Input type="number" placeholder="Enter amount" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="status">Status</Label>
-                <Select value={status} onValueChange={(value: 'Paid' | 'Pending' | 'Overdue') => setStatus(value)}>
-                  <SelectTrigger id="status">
-                    <SelectValue placeholder="Select status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Paid">Paid</SelectItem>
-                    <SelectItem value="Pending">Pending</SelectItem>
-                    <SelectItem value="Overdue">Overdue</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </CardContent>
-            <CardFooter className="flex justify-end gap-2">
-              <Link href="/">
-                <Button variant="outline">Cancel</Button>
-              </Link>
-              <Button type="submit">Save Changes</Button>
-            </CardFooter>
-          </Card>
-        </form>
+                <FormField
+                  control={form.control}
+                  name="status"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Status</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select status" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="Paid">Paid</SelectItem>
+                          <SelectItem value="Pending">Pending</SelectItem>
+                          <SelectItem value="Overdue">Overdue</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </CardContent>
+              <CardFooter className="flex justify-end gap-2">
+                <Link href="/">
+                  <Button variant="outline">Cancel</Button>
+                </Link>
+                <Button type="submit">Save Changes</Button>
+              </CardFooter>
+            </Card>
+          </form>
+        </Form>
       </main>
     </div>
   );
