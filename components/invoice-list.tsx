@@ -1,4 +1,6 @@
-import { invoices } from "@/lib/data";
+"use client";
+
+import { useData } from "@/hooks/use-data";
 import {
   Table,
   TableBody,
@@ -19,8 +21,18 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { MoreHorizontal, Eye, Pencil, Trash } from "lucide-react";
 import Link from "next/link";
+import { toast } from "sonner";
 
 export function InvoiceList() {
+  const { invoices, deleteInvoice } = useData();
+
+  const handleDelete = (id: string) => {
+    deleteInvoice(id);
+    toast("Invoice has been deleted.", {
+      description: "The invoice has been successfully removed.",
+    });
+  };
+
   return (
     <Table>
       <TableHeader>
@@ -76,7 +88,7 @@ export function InvoiceList() {
                       Edit
                     </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleDelete(invoice.id)}>
                     <Trash className="mr-2 h-4 w-4" />
                     Delete
                   </DropdownMenuItem>

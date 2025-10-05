@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useData } from "@/hooks/use-data";
 import { DashboardHeader } from "@/components/dashboard-header";
 import { Button } from "@/components/ui/button";
@@ -8,24 +8,51 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
+import { Client } from "@/lib/definitions";
 import { toast } from "sonner";
 
-export default function NewClientPage() {
+export default function EditClientPage() {
   const router = useRouter();
-  const { addClient } = useData();
+  const params = useParams();
+  const { clients, updateClient } = useData();
+  const [client, setClient] = useState<Client | null>(null);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [address, setAddress] = useState("");
 
+  useEffect(() => {
+    const clientId = params.id as string;
+    const currentClient = clients.find(c => c.id === clientId);
+    if (currentClient) {
+      setClient(currentClient);
+      setName(currentClient.name);
+      setEmail(currentClient.email);
+      setAddress(currentClient.address);
+    }
+  }, [params.id, clients]);
+
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    addClient({ name, email, address });
-    toast("Client has been added.", {
-      description: "The new client has been successfully saved.",
-    });
-    router.push("/clients");
+    if (client) {
+      updateClient({ ...client, name, email, address });
+      toast("Client has been updated.", {
+        description: "The client's details have been successfully saved.",
+      });
+      router.push("/clients");
+    }
   };
+
+  if (!client) {
+    return (
+        <div className="min-h-screen flex flex-col">
+            <DashboardHeader />
+            <main className="flex-1 container mx-auto px-4 py-8">
+                <p>Client not found</p>
+            </main>
+        </div>
+    )
+  }
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -33,15 +60,15 @@ export default function NewClientPage() {
       <main className="flex-1 container mx-auto px-4 py-8">
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-3xl font-bold">New Client</h1>
-            <p className="text-muted-foreground">Add a new client to your list</p>
+            <h1 className="text-3xl font-bold">Edit Client</h1>
+            <p className="text-muted-foreground">Update the client&apos;s details</p>
           </div>
         </div>
         <form onSubmit={handleSubmit}>
           <Card>
             <CardHeader>
               <CardTitle>Client Details</CardTitle>
-              <CardDescription>Enter the details of the new client</CardDescription>
+              <CardDescription>Update the details for {client.name}</CardDescription>
             </CardHeader>
             <CardContent className="grid gap-4">
               <div className="space-y-2">
@@ -80,7 +107,7 @@ export default function NewClientPage() {
               <Link href="/clients">
                 <Button variant="outline">Cancel</Button>
               </Link>
-              <Button type="submit">Save Client</Button>
+              <Button type="submit">Save Changes</Button>
             </CardFooter>
           </Card>
         </form>
