@@ -2,14 +2,13 @@ import './globals.css';
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import { ThemeProvider } from '@/components/theme-provider';
-import { DataProvider } from '@/hooks/use-data';
-import { Toaster } from '@/components/ui/toaster';
+import { Toaster } from 'sonner';
 
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'Invoice App',
-  description: 'Modern invoice management application',
+  title: 'Pro-Invoice | Modern Invoice Management',
+  description: 'A modern application to streamline invoice and client management.',
 };
 
 export default function RootLayout({
@@ -20,11 +19,9 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
-        <ThemeProvider attribute="class" defaultTheme="light">
-          <DataProvider>
+        <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
             {children}
-            <Toaster />
-          </DataProvider>
+            <Toaster richColors />
         </ThemeProvider>
       </body>
     </html>
