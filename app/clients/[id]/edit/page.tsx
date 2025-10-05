@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -8,16 +9,18 @@ import { DashboardHeader } from "@/components/dashboard-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
+import { Client, ClientSchema } from "@/lib/definitions";
 import { toast } from "sonner";
-import { ClientSchema } from "@/lib/definitions";
 
-export default function NewClientPage() {
+export default function EditClientPage() {
   const router = useRouter();
-  const { addClient } = useData();
+  const params = useParams();
+  const { clients, updateClient } = useData();
+  const clientId = params.id as string;
+  const client = clients.find(c => c.id === clientId);
 
   const form = useForm<z.infer<typeof ClientSchema>>({
     resolver: zodResolver(ClientSchema),
@@ -28,13 +31,32 @@ export default function NewClientPage() {
     },
   });
 
+  useEffect(() => {
+    if (client) {
+      form.reset(client);
+    }
+  }, [client, form]);
+
   const onSubmit = (values: z.infer<typeof ClientSchema>) => {
-    addClient(values);
-    toast("Client has been added.", {
-      description: "The new client has been successfully saved.",
-    });
-    router.push("/clients");
+    if (client) {
+      updateClient({ ...client, ...values });
+      toast("Client has been updated.", {
+        description: "The client's details have been successfully saved.",
+      });
+      router.push("/clients");
+    }
   };
+
+  if (!client) {
+    return (
+        <div className="min-h-screen flex flex-col">
+            <DashboardHeader />
+            <main className="flex-1 container mx-auto px-4 py-8">
+                <p>Client not found</p>
+            </main>
+        </div>
+    )
+  }
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -42,8 +64,8 @@ export default function NewClientPage() {
       <main className="flex-1 container mx-auto px-4 py-8">
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-3xl font-bold">New Client</h1>
-            <p className="text-muted-foreground">Add a new client to your list</p>
+            <h1 className="text-3xl font-bold">Edit Client</h1>
+            <p className="text-muted-foreground">Update the client&apos;s details</p>
           </div>
         </div>
         <Form {...form}>
@@ -51,7 +73,7 @@ export default function NewClientPage() {
             <Card>
               <CardHeader>
                 <CardTitle>Client Details</CardTitle>
-                <CardDescription>Enter the details of the new client</CardDescription>
+                <CardDescription>Update the details for {client.name}</CardDescription>
               </CardHeader>
               <CardContent className="grid gap-4">
                 <FormField
@@ -98,7 +120,7 @@ export default function NewClientPage() {
                 <Link href="/clients">
                   <Button variant="outline">Cancel</Button>
                 </Link>
-                <Button type="submit">Save Client</Button>
+                <Button type="submit">Save Changes</Button>
               </CardFooter>
             </Card>
           </form>

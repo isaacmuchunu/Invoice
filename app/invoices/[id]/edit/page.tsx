@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -11,13 +12,16 @@ import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
+import { Invoice, InvoiceSchema } from "@/lib/definitions";
 import { toast } from "sonner";
-import { InvoiceSchema } from "@/lib/definitions";
 
-export default function NewInvoicePage() {
+export default function EditInvoicePage() {
   const router = useRouter();
-  const { clients, addInvoice } = useData();
+  const params = useParams();
+  const { invoices, clients, updateInvoice } = useData();
+  const invoiceId = params.id as string;
+  const invoice = invoices.find(inv => inv.id === invoiceId);
 
   const form = useForm<z.infer<typeof InvoiceSchema>>({
     resolver: zodResolver(InvoiceSchema),
@@ -28,13 +32,32 @@ export default function NewInvoicePage() {
     },
   });
 
+  useEffect(() => {
+    if (invoice) {
+      form.reset(invoice);
+    }
+  }, [invoice, form]);
+
   const onSubmit = (values: z.infer<typeof InvoiceSchema>) => {
-    addInvoice(values);
-    toast("Invoice has been created.", {
-      description: "The new invoice has been successfully saved.",
-    });
-    router.push("/");
+    if (invoice) {
+      updateInvoice({ ...invoice, ...values });
+      toast("Invoice has been updated.", {
+        description: "The invoice details have been successfully saved.",
+      });
+      router.push("/");
+    }
   };
+
+  if (!invoice) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <DashboardHeader />
+        <main className="flex-1 container mx-auto px-4 py-8">
+          <p>Invoice not found</p>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -42,8 +65,8 @@ export default function NewInvoicePage() {
       <main className="flex-1 container mx-auto px-4 py-8">
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-3xl font-bold">New Invoice</h1>
-            <p className="text-muted-foreground">Create a new invoice</p>
+            <h1 className="text-3xl font-bold">Edit Invoice</h1>
+            <p className="text-muted-foreground">Update the invoice details</p>
           </div>
         </div>
         <Form {...form}>
@@ -51,7 +74,7 @@ export default function NewInvoicePage() {
             <Card>
               <CardHeader>
                 <CardTitle>Invoice Details</CardTitle>
-                <CardDescription>Enter the details of the new invoice</CardDescription>
+                <CardDescription>Update the details for invoice {invoice.id}</CardDescription>
               </CardHeader>
               <CardContent className="grid gap-4">
                 <FormField
@@ -118,7 +141,7 @@ export default function NewInvoicePage() {
                 <Link href="/">
                   <Button variant="outline">Cancel</Button>
                 </Link>
-                <Button type="submit">Save Invoice</Button>
+                <Button type="submit">Save Changes</Button>
               </CardFooter>
             </Card>
           </form>
